@@ -65,3 +65,5 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 app.include_router(strategies.router, prefix="/api/v1/strategies", tags=["Strategies"])
 app.include_router(indicators.router, prefix="/api/v1/indicators", tags=["Indicators"])
 app.include_router(scans.router, prefix="/api/v1/scans", tags=["Scans"])
+
+# Force new commit for PR creation
