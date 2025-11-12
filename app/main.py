@@ -5,6 +5,8 @@ from .core import models
 # 애플리케이션 시작 시 데이터베이스 테이블 생성
 models.Base.metadata.create_all(bind=engine)
 
+from .api import strategies
+
 app = FastAPI(
     title="Trading Bot API",
     description="API for managing trading strategies, scans, and real-time data.",
@@ -20,4 +22,8 @@ async def health_check():
     """
     return {"status": "ok"}
 
-# Further endpoints for strategies, scans, etc. will be added here.
+app.include_router(
+    strategies.router,
+    prefix="/api/v1/strategies",
+    tags=["Strategies"],
+)
