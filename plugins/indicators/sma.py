@@ -10,7 +10,8 @@ def simple_moving_average(data: pl.DataFrame, length: int = 20, source_col: str 
     :param source_col: 계산에 사용할 컬럼 (예: 'close', 'open')
     :return: SMA가 계산된 Polars Series
     """
-    return data[source_col].rolling(window_size=length).mean()
+    # Polars Series에서는 .rolling_mean() 함수를 직접 사용합니다.
+    return data[source_col].rolling_mean(window_size=length)
 
 # PRD 8.1항에 명시된 플러그인 표준 형식
 INDICATORS: Dict[str, Dict[str, Any]] = {
