@@ -5,9 +5,12 @@ import type { Token } from '../pages/StrategyBuilderPage';
 
 interface PaletteProps {
   onItemClick: (item: { type: Token['type']; label: string }) => void;
+  onIndicatorSelect: (indicator: IndicatorMetadata) => void;
+  variables: string[];
+  isFirstPass: boolean; // 1차 스캔 모드 여부
 }
 
-const Palette: React.FC<PaletteProps> = ({ onItemClick }) => {
+const Palette: React.FC<PaletteProps> = ({ onItemClick, onIndicatorSelect, variables, isFirstPass }) => {
   const [indicators, setIndicators] = useState<Record<string, IndicatorMetadata>>({});
   const [error, setError] = useState<string | null>(null);
 
@@ -17,19 +20,17 @@ const Palette: React.FC<PaletteProps> = ({ onItemClick }) => {
         const data = await getIndicators();
         setIndicators(data);
       } catch (err) {
-        setError('Failed to load indicators from the server.');
-        console.error(err);
+        setError('Failed to load indicators.');
       }
     };
-
     fetchIndicators();
   }, []);
 
   const handleIndicatorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedIndicator = e.target.value;
-    if (selectedIndicator) {
-      onItemClick({ type: 'indicator', label: selectedIndicator });
-      e.target.value = ''; // Reset select
+    const selectedKey = e.target.value;
+    if (selectedKey && indicators[selectedKey]) {
+      onIndicatorSelect(indicators[selectedKey]);
+      e.target.value = '';
     }
   };
 
@@ -42,12 +43,23 @@ const Palette: React.FC<PaletteProps> = ({ onItemClick }) => {
 
       <div style={sectionStyle}>
         <strong>Indicators</strong>
-        <select onChange={handleIndicatorChange}>
+        <select onChange={handleIndicatorChange} disabled={isFirstPass} title={isFirstPass ? "Indicators are only available in the 2nd pass scan" : ""}>
           <option value="">-- Select Indicator --</option>
           {Object.entries(indicators).map(([key, meta]) => (
             <option key={key} value={key}>{meta.name}</option>
           ))}
         </select>
+        {isFirstPass && <p style={{fontSize: '12px', color: '#888', margin: 0}}>2차 스캔에서 사용 가능</p>}
+      </div>
+
+      <div style={sectionStyle}>
+        <strong>Variables</strong>
+        {variables.map(varName => (
+          <button key={varName} style={buttonStyle} onClick={() => onItemClick({ type: 'variable', label: varName })} >
+            {varName}
+          </button>
+        ))}
+        {variables.length === 0 && <span style={{color: '#888'}}>No variables defined.</span>}
       </div>
 
       <div style={sectionStyle}>
@@ -67,7 +79,6 @@ const Palette: React.FC<PaletteProps> = ({ onItemClick }) => {
           </button>
         ))}
       </div>
-       {/* Numbers, Variables, Functions sections will be added later */}
     </div>
   );
 };

@@ -13,6 +13,7 @@ class Strategy(Base):
     name = Column(String, unique=True, index=True, nullable=False)
     broker = Column(String, nullable=False)
     market = Column(String, nullable=False)
+    content = Column(String, nullable=True) # 캔버스 내용을 JSON 문자열로 저장
     is_active = Column(Boolean, default=True, nullable=False)
 
     # 생성 및 수정 시간을 자동으로 기록합니다.

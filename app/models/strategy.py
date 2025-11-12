@@ -7,6 +7,7 @@ class StrategyBase(BaseModel):
     name: str
     broker: str
     market: str
+    content: Optional[str] = None
     is_active: bool = True
 
 # 전략 생성을 위한 스키마 (API 요청 본문)

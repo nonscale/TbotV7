@@ -1,14 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
 from sqlalchemy.orm import Session
-from typing import Dict, Any
+import logging
+import json
 
 from ..core.engine import Scanner
 from ..services import strategy_service
 from ..core.database import SessionLocal
+from ..main import manager # 수정된 웹소켓 매니저 임포트
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
-# 데이터베이스 세션을 얻기 위한 의존성 주입 함수
 def get_db():
     db = SessionLocal()
     try:
@@ -16,39 +18,54 @@ def get_db():
     finally:
         db.close()
 
-import time
-import logging
-
-logger = logging.getLogger(__name__)
-
-def run_scan_in_background(strategy_id: int):
+async def run_scan_in_background(strategy_id: int, client_id: str):
     """
-    백그라운드에서 실제 스캔을 수행하는 함수입니다.
+    백그라운드에서 실제 스캔을 수행하고 결과를 특정 클라이언트의 웹소켓으로 전송합니다.
     """
-    logger.info(f"Background task started for strategy_id={strategy_id}")
-    # 시뮬레이션: 실제 스캔에는 시간이 걸린다고 가정
-    time.sleep(5)
-    # TODO: DB에서 전략을 가져와서 해당 전략으로 Scanner를 실행하는 로직 구현
-    # db = SessionLocal()
-    # strategy = strategy_service.get_strategy(db, strategy_id=strategy_id)
-    # scanner = Scanner(broker_name=strategy.broker)
-    # results = scanner.run_scan(strategy_details)
-    # db.close()
-    logger.info(f"Background task finished for strategy_id={strategy_id}")
+    logger.info(f"Background task started for strategy_id={strategy_id} for client_id={client_id}")
+    db = SessionLocal()
+    try:
+        strategy = strategy_service.get_strategy(db, strategy_id=strategy_id)
+        if not strategy:
+            logger.error(f"Strategy {strategy_id} not found.")
+            return
+
+        scanner = Scanner(broker_name=strategy.broker)
+        results = scanner.run_scan(strategy)
+        logger.info(f"Scan for strategy {strategy_id} found {len(results.get('matched_tickers', []))} tickers.")
+
+        # 결과를 특정 클라이언트에게 웹소켓으로 전송
+        for item in results.get("matched_tickers", []):
+            payload = {
+                "ticker": item.get("ticker"),
+                "name": item.get("ticker"),
+                "price": item.get("close", 0),
+                "amount": item.get("amount", 0)
+            }
+            message = {"event": "scan_result_found", "payload": payload}
+            await manager.send_personal_message(json.dumps(message), client_id)
+
+    except Exception as e:
+        logger.error(f"Error during scan for strategy {strategy_id}: {e}")
+    finally:
+        db.close()
+        logger.info(f"Background task finished for strategy_id={strategy_id}")
 
 
 @router.post("/run/{strategy_id}", status_code=202)
-def run_scan(strategy_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def run_scan(
+    strategy_id: int,
+    background_tasks: BackgroundTasks,
+    client_id: str = Query(..., description="The WebSocket client ID to send results to"),
+    db: Session = Depends(get_db)
+):
     """
-    특정 전략에 대한 스캔을 비동기적으로 실행합니다.
+    특정 전략에 대한 스캔을 비동기적으로 실행하고, 결과를 지정된 client_id로 전송합니다.
     """
-    # 1. DB에서 해당 ID의 전략이 존재하는지 확인
     strategy = strategy_service.get_strategy(db, strategy_id=strategy_id)
     if not strategy:
         raise HTTPException(status_code=404, detail="Strategy not found")
 
-    # 2. 실제 스캔 로직을 백그라운드 작업으로 추가
-    background_tasks.add_task(run_scan_in_background, strategy.id)
+    background_tasks.add_task(run_scan_in_background, strategy.id, client_id)
 
-    # 3. 작업이 접수되었음을 즉시 클라이언트에 응답
     return {"message": "Scan has been started in the background.", "strategy_id": strategy.id}

@@ -20,6 +20,7 @@ def create_strategy(db: Session, strategy: pydantic_models.StrategyCreate):
         name=strategy.name,
         broker=strategy.broker,
         market=strategy.market,
+        content=strategy.content,
         is_active=strategy.is_active
     )
     db.add(db_strategy)
