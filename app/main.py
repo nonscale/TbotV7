@@ -1,5 +1,6 @@
 import logging
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from .core.database import engine, Base
 from .core import models
 
@@ -18,6 +19,15 @@ app = FastAPI(
     title="Trading Bot API",
     description="API for managing trading strategies, scans, and real-time data.",
     version="1.0.0",
+)
+
+# CORS 미들웨어 추가
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # 개발 중에는 모든 출처를 허용
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.get("/health", tags=["System"])
