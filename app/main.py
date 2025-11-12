@@ -1,4 +1,9 @@
 from fastapi import FastAPI
+from .core.database import engine, Base
+from .core import models
+
+# 애플리케이션 시작 시 데이터베이스 테이블 생성
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Trading Bot API",
