@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Palette from '../components/Palette';
 import Canvas from '../components/Canvas';
 import ScanResultsTable, { ScanResult } from '../components/ScanResultsTable';
@@ -33,7 +33,9 @@ const StrategyBuilderPage: React.FC = () => {
     ws.onopen = () => console.log("WebSocket connected");
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
-      if (message.event === 'scan_result_found') setScanResults(prev => [...prev, message.payload]);
+      if (message.event === 'scan_result_found') {
+        setScanResults(prev => [...prev, message.payload]);
+      }
     };
     ws.onerror = (e) => console.error("WebSocket Error:", e);
     ws.onclose = () => console.log("WebSocket disconnected");
@@ -44,7 +46,10 @@ const StrategyBuilderPage: React.FC = () => {
     setRules(prev => ({ ...prev, [scanPhase]: [...prev[scanPhase], { ...item, id: `${item.label}-${Date.now()}` }] }));
   };
   const handleIndicatorSelect = (indicator: IndicatorMetadata) => {
-    if (scanPhase === 'first_pass') { alert("Indicators can only be used in the 2nd pass scan."); return; }
+    if (scanPhase === 'first_pass') { 
+      alert("Indicators can only be used in the 2nd pass scan."); 
+      return; 
+    }
     setSelectedIndicator(indicator);
     setIsModalOpen(true);
   };
@@ -60,7 +65,7 @@ const StrategyBuilderPage: React.FC = () => {
 
   const handleSaveStrategy = async () => {
     if (!strategyName) { setSaveStatus('Please enter a strategy name.'); return; }
-
+    
     setSaveStatus('Saving...');
     setScanStatus('');
     setCreatedStrategyId(null);
@@ -101,7 +106,7 @@ const StrategyBuilderPage: React.FC = () => {
   return (
     <div>
       <h1>Strategy Builder</h1>
-
+      
       <div style={{ margin: '20px 0', border: '1px solid #eee', padding: '10px', display: 'flex', gap: '10px', alignItems: 'center' }}>
         <input type="text" value={strategyName} onChange={e => setStrategyName(e.target.value)} placeholder="Enter Strategy Name" />
         <button onClick={handleSaveStrategy}>Save Strategy</button>
@@ -116,10 +121,10 @@ const StrategyBuilderPage: React.FC = () => {
         <button onClick={() => setScanPhase('first_pass')} disabled={scanPhase === 'first_pass'}>Edit 1st Pass Rules</button>
         <button onClick={() => setScanPhase('second_pass')} disabled={scanPhase === 'second_pass'}>Edit 2nd Pass Rules</button>
       </div>
-
+      
       <h2 style={{ textTransform: 'capitalize' }}>{scanPhase.replace('_', ' ')} Canvas</h2>
       <Canvas tokens={rules[scanPhase]} onRemoveToken={handleRemoveToken} onTokenOrderChange={handleTokenOrderChange} />
-
+      
       <ScanResultsTable results={scanResults} />
       <IndicatorModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} indicator={selectedIndicator} onSave={handleSaveVariable} />
     </div>

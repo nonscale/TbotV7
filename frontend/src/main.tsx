@@ -14,26 +14,11 @@ const router = createBrowserRouter([
     path: '/',
     element: <Layout />,
     children: [
-      {
-        index: true, // 기본 경로 (/)일 때 렌더링
-        element: <DashboardPage />,
-      },
-      {
-        path: 'dashboard',
-        element: <DashboardPage />,
-      },
-      {
-        path: 'builder',
-        element: <StrategyBuilderPage />,
-      },
-      {
-        path: 'analysis',
-        element: <AnalysisPage />,
-      },
-      {
-        path: 'strategy-management',
-        element: <StrategyManagementPage />,
-      },
+      { index: true, element: <DashboardPage /> },
+      { path: 'dashboard', element: <DashboardPage /> },
+      { path: 'builder', element: <StrategyBuilderPage /> },
+      { path: 'analysis', element: <AnalysisPage /> },
+      { path: 'strategy-management', element: <StrategyManagementPage /> },
     ],
   },
 ]);
