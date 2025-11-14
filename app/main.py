@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # DB 테이블 생성
 models.Base.metadata.create_all(bind=engine)
 
-from .api import strategies, indicators, scans
+from .api import strategies, indicators, scans, trading
 
 app = FastAPI(
     title="Trading Bot API",
@@ -39,7 +39,8 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
     await manager.connect(websocket, client_id)
     try:
         while True:
-            await websocket.receive_text()
+            data = await websocket.receive_text()
+            await manager.handle_message(client_id, data)
     except WebSocketDisconnect:
         manager.disconnect(client_id)
         logging.info(f"Client #{client_id} disconnected")
@@ -47,3 +48,4 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 app.include_router(strategies.router, prefix="/api/v1/strategies", tags=["Strategies"])
 app.include_router(indicators.router, prefix="/api/v1/indicators", tags=["Indicators"])
 app.include_router(scans.router, prefix="/api/v1/scans", tags=["Scans"])
+app.include_router(trading.router, prefix="/api/v1/trading", tags=["Trading"])
