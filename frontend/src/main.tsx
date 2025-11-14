@@ -6,6 +6,7 @@ import StrategyBuilderPage from './pages/StrategyBuilderPage';
 import StrategyManagementPage from './pages/StrategyManagementPage';
 import DashboardPage from './pages/DashboardPage';
 import AnalysisPage from './pages/AnalysisPage';
+import TradingManagementPage from './pages/TradingManagementPage'; // 추가
 import './index.css';
 
 const router = createBrowserRouter([
@@ -28,6 +29,10 @@ const router = createBrowserRouter([
       {
         path: "analysis/:ticker",
         element: <AnalysisPage />,
+      },
+      {
+        path: "trading", // 추가
+        element: <TradingManagementPage />,
       },
     ],
   },

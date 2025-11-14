@@ -1,48 +1,60 @@
+// src/components/ScanResultsTable.tsx
 import React from 'react';
 
+// StrategyBuilderPage에서 import 할 수 있도록 타입을 export 합니다.
 export interface ScanResult {
+  strategy_name: string;
   ticker: string;
-  name: string;
-  price: number;
-  amount: number;
+  timestamp: string;
+  details: {
+    price: number;
+    volume: number;
+  };
 }
 
 interface ScanResultsTableProps {
   results: ScanResult[];
 }
 
-// React.memo를 사용하여 불필요한 리렌더링을 방지하는 최적화 추가
-const ScanResultsTable: React.FC<ScanResultsTableProps> = React.memo(({ results }) => {
-  if (!results || results.length === 0) {
-    return <p style={{ marginTop: '20px' }}>스캔 결과가 여기에 표시됩니다.</p>;
-  }
+const ScanResultsTable: React.FC<ScanResultsTableProps> = ({ results }) => {
+
+  const formatNumber = (num: number) => num.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const formatDateTime = (isoString: string) => new Date(isoString).toLocaleString('ko-KR');
 
   return (
-    <div style={{ marginTop: '20px' }}>
-      <h3>스캔 결과</h3>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+    <div className="overflow-x-auto">
+      <table className="w-full text-left">
         <thead>
-          <tr>
-            <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2', textAlign: 'left' }}>종목명</th>
-            <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2', textAlign: 'left' }}>코드명</th>
-            <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2', textAlign: 'left' }}>현재가</th>
-            <th style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: '#f2f2f2', textAlign: 'left' }}>거래대금(억)</th>
+          <tr className="border-b border-gray-600">
+            <th className="p-3">검출 시각</th>
+            <th className="p-3">종목명</th>
+            <th className="p-3">관련 전략</th>
+            <th className="p-3 text-right">가격</th>
+            <th className="p-3 text-right">거래량</th>
           </tr>
         </thead>
         <tbody>
-          {results.map((result) => (
-            // key 값으로 index 대신 고유한 ticker를 사용하여 성능 최적화
-            <tr key={result.ticker}>
-              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{result.name}</td>
-              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{result.ticker}</td>
-              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{result.price.toLocaleString()}</td>
-              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{result.amount.toFixed(2)}</td>
+          {results.length === 0 ? (
+            <tr>
+              <td colSpan={5} className="p-4 text-center text-gray-500">
+                실시간 스캔 결과가 여기에 표시됩니다.
+              </td>
             </tr>
-          ))}
+          ) : (
+            results.map((result) => (
+              <tr key={`${result.ticker}-${result.timestamp}`} className="border-b border-gray-700 hover:bg-gray-700">
+                <td className="p-3 text-sm text-gray-400">{formatDateTime(result.timestamp)}</td>
+                <td className="p-3 font-semibold">{result.ticker}</td>
+                <td className="p-3 text-gray-400">{result.strategy_name}</td>
+                <td className="p-3 text-right">{formatNumber(result.details.price)}</td>
+                <td className="p-3 text-right">{formatNumber(result.details.volume)}</td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>
   );
-});
+};
 
 export default ScanResultsTable;
