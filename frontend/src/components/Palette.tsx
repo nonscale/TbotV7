@@ -1,84 +1,84 @@
-import React, { useState, useEffect } from 'react';
-import { getIndicators } from '../services/api';
+// src/components/Palette.tsx
+import React, { useState } from 'react';
 import type { IndicatorMetadata } from '../services/api';
 import type { Token } from '../pages/StrategyBuilderPage';
 
 interface PaletteProps {
-  onItemClick: (item: { type: Token['type']; label: string }) => void;
-  onIndicatorSelect: (indicator: IndicatorMetadata) => void;
+  onAddItemToCanvas: (item: { type: Token['type']; label: string }, targetCanvas: 'first_pass' | 'second_pass') => void;
+  onOpenIndicatorModal: (indicator: IndicatorMetadata) => void;
   variables: string[];
-  isFirstPass: boolean; // 1차 스캔 모드 여부
+  indicators: IndicatorMetadata[];
 }
 
-const Palette: React.FC<PaletteProps> = ({ onItemClick, onIndicatorSelect, variables, isFirstPass }) => {
-  const [indicators, setIndicators] = useState<Record<string, IndicatorMetadata>>({});
-  const [error, setError] = useState<string | null>(null);
+const PaletteButton: React.FC<{ onClick: () => void; children: React.ReactNode; className?: string, title?: string }> = ({ onClick, children, className = '', title }) => (
+  <button onClick={onClick} title={title} className={`bg-gray-600 hover:bg-gray-500 text-white font-semibold py-2 px-3 rounded-md text-sm transition-colors ${className}`}>
+    {children}
+  </button>
+);
 
-  useEffect(() => {
-    const fetchIndicators = async () => {
-      try {
-        const data = await getIndicators();
-        setIndicators(data);
-      } catch (err) {
-        setError('Failed to load indicators.');
-      }
-    };
-    fetchIndicators();
-  }, []);
+const PaletteSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+  <div className="mb-4">
+    <h3 className="text-lg font-bold text-gray-300 mb-2">{title}</h3>
+    <div className="flex flex-wrap gap-2">{children}</div>
+  </div>
+);
 
-  const handleIndicatorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedKey = e.target.value;
-    if (selectedKey && indicators[selectedKey]) {
-      onIndicatorSelect(indicators[selectedKey]);
-      e.target.value = '';
-    }
+
+const Palette: React.FC<PaletteProps> = ({ onAddItemToCanvas, onOpenIndicatorModal, variables, indicators }) => {
+  const [targetCanvas, setTargetCanvas] = useState<'first_pass' | 'second_pass'>('first_pass');
+
+  const handleAddItem = (type: Token['type'], label: string) => {
+    onAddItemToCanvas({ type, label }, targetCanvas);
   };
 
-  const sectionStyle: React.CSSProperties = { border: '1px solid #ccc', padding: '10px', margin: '5px' };
-  const buttonStyle: React.CSSProperties = { margin: '2px' };
-
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', borderBottom: '2px solid black', paddingBottom: '10px' }}>
-      {error && <div style={{ color: 'red' }}>{error}</div>}
-
-      <div style={sectionStyle}>
-        <strong>Indicators</strong>
-        <select onChange={handleIndicatorChange} disabled={isFirstPass} title={isFirstPass ? "Indicators are only available in the 2nd pass scan" : ""}>
-          <option value="">-- Select Indicator --</option>
-          {Object.entries(indicators).map(([key, meta]) => (
-            <option key={key} value={key}>{meta.name}</option>
-          ))}
-        </select>
-        {isFirstPass && <p style={{fontSize: '12px', color: '#888', margin: 0}}>2차 스캔에서 사용 가능</p>}
+    <div className="w-full">
+      {/* --- 캔버스 선택 토글 --- */}
+      <div className="flex items-center justify-center bg-gray-700 rounded-lg p-1 mb-4">
+        <button
+          onClick={() => setTargetCanvas('first_pass')}
+          className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${targetCanvas === 'first_pass' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-600'}`}
+        >
+          1차 캔버스에 추가
+        </button>
+        <button
+          onClick={() => setTargetCanvas('second_pass')}
+          className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${targetCanvas === 'second_pass' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-600'}`}
+        >
+          2차 캔버스에 추가
+        </button>
       </div>
 
-      <div style={sectionStyle}>
-        <strong>Variables</strong>
+      {/* --- 팔레트 섹션 --- */}
+      <PaletteSection title="지표 (Indicators)">
+        <p className="text-xs text-gray-400 w-full mb-2">지표를 클릭하여 새 변수를 생성하세요. 변수는 'Variables' 목록에 추가됩니다.</p>
+        {indicators.map((meta) => (
+          <PaletteButton key={meta.name} onClick={() => onOpenIndicatorModal(meta)} title={`Params: ${Object.keys(meta.params).join(', ')}`}>
+            {meta.name}
+          </PaletteButton>
+        ))}
+      </PaletteSection>
+
+      <PaletteSection title="변수 (Variables)">
         {variables.map(varName => (
-          <button key={varName} style={buttonStyle} onClick={() => onItemClick({ type: 'variable', label: varName })} >
+          <PaletteButton key={varName} onClick={() => handleAddItem('variable', varName)}>
             {varName}
-          </button>
+          </PaletteButton>
         ))}
-        {variables.length === 0 && <span style={{color: '#888'}}>No variables defined.</span>}
-      </div>
+        {variables.length === 0 && <span className="text-sm text-gray-500">생성된 변수가 없습니다.</span>}
+      </PaletteSection>
 
-      <div style={sectionStyle}>
-        <strong>Basic Data</strong>
+      <PaletteSection title="기본 데이터 (Basic Data)">
         {['open', 'high', 'low', 'close', 'volume', 'amount'].map(item => (
-          <button key={item} style={buttonStyle} onClick={() => onItemClick({ type: 'value', label: item })}>
-            {item}
-          </button>
+          <PaletteButton key={item} onClick={() => handleAddItem('value', item)}>{item}</PaletteButton>
         ))}
-      </div>
+      </PaletteSection>
 
-      <div style={sectionStyle}>
-        <strong>Operators</strong>
+      <PaletteSection title="연산자 (Operators)">
         {['+', '-', '*', '/', '>', '>=', '<', '<=', '==', '!=', 'AND', 'OR', '(', ')'].map(item => (
-          <button key={item} style={buttonStyle} onClick={() => onItemClick({ type: 'operator', label: item })}>
-            {item}
-          </button>
+          <PaletteButton key={item} onClick={() => handleAddItem('operator', item)}>{item}</PaletteButton>
         ))}
-      </div>
+      </PaletteSection>
     </div>
   );
 };
