@@ -38,6 +38,8 @@ async def run_scan_in_background(strategy_id: int, client_id: str):
         )
 
         scanner = Scanner(broker_name=strategy.broker)
+        # 참고: scanner.run_scan이 동기 함수일 경우, 비동기 환경에서 실행 시 성능 이슈가 있을 수 있습니다.
+        # 지금은 그대로 두지만, 추후 I/O 바운드 작업이라면 `asyncio.to_thread` 사용을 고려해야 합니다.
         results = scanner.run_scan(strategy)
 
         matched_tickers = results.get("matched_tickers", [])
